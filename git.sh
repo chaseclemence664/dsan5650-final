@@ -14,7 +14,7 @@ if [ "$answer" != "${answer#[Yy]}" ] ;then
     echo "commit message = "$message; 
     
     # ADD CHANGES TO QUEUE
-    git add ../../; 
+    git add .; 
     
     # MAIN BRANCH
     git commit -m "$message"; 
