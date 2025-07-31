@@ -1,0 +1,387 @@
+
+
+This code loads in the data and identifies food codes associated with diet sodas
+
+```{python}
+## 2013 - 2014 data - Identify Diet Soda Food Codes
+import pandas as pd
+import numpy as np
+
+## Dietary Data Download
+food_codes = pd.read_sas("./data/2013_2014/DRXFCD_H.XPT", format="xport")
+day1 = pd.read_sas("./data/2013_2014/DR1IFF_H.XPT", format="xport")
+day2 = pd.read_sas("./data/2013_2014/DR2IFF_H.XPT", format="xport")
+bmi = pd.read_sas("./data/2013_2014/BMX_H.XPT", format="xport")
+demographics = pd.read_sas("./data/2013_2014/DEMO_H.XPT", format="xport")
+income = pd.read_sas("./data/2013_2014/INQ_H.XPT", format="xport")
+weight_history = pd.read_sas("./data/2013_2014/WHQ_H.XPT", format="xport")
+physical_fitness = pd.read_sas("./data/2013_2014/PAQ_H.XPT", format="xport")
+diet = pd.read_sas("./data/2013_2014/DBQ_H.XPT", format="xport")
+
+# Make column integer type
+food_codes['DRXFDCD'] = food_codes['DRXFDCD'].astype(int)
+
+# Decode string column and filter for rows containing relevant keywords for diet/low calorie soft drinks
+def safe_decode(x):
+    if isinstance(x, bytes):
+        try:
+            return x.decode('utf-8')
+        except UnicodeDecodeError:
+            return x.decode('latin-1')  # Fallback encoding
+    return x
+
+food_codes['DRXFCLD'] = food_codes['DRXFCLD'].apply(safe_decode)
+
+# Keywords specific to diet/low calorie soft drinks
+diet_keywords = [
+    "diet", "low calorie", "zero sugar", "light"
+]
+
+soft_drink_keywords = [
+    "soft drink"
+]
+
+diet_soda_codes = food_codes[
+    food_codes['DRXFCLD'].str.contains(
+        '(?=.*(' + '|'.join(diet_keywords) + '))(?=.*(' + '|'.join(soft_drink_keywords) + '))',
+        case=False, na=False
+    )
+]
+
+# Display rows of diet soda related food codes
+diet_soda_codes.head()
+```
+
+This code then seperates the dietary daily intake information into two seperate datasets - one containing diet soda drinkers and another containing non diet soda drinkers
+
+```{python}
+# Filter observations that are specific to the diet sodas
+day1_merged = day1.merge(
+    diet_soda_codes[['DRXFDCD', 'DRXFCLD']], 
+    left_on='DR1IFDCD', 
+    right_on='DRXFDCD', 
+    how='left'
+)
+
+day2_merged = day2.merge(
+    diet_soda_codes[['DRXFDCD', 'DRXFCLD']], 
+    left_on='DR2IFDCD', 
+    right_on='DRXFDCD', 
+    how='left'
+)
+
+ 
+# Now: soda drink rows will have a non-null `DRXFCLD`
+diet_soda_day1 = day1_merged[~day1_merged['DRXFCLD'].isna()]
+diet_soda_day2 = day2_merged[~day2_merged['DRXFCLD'].isna()]
+
+# Drop duplicates
+diet_soda_drinkers1 = diet_soda_day1[["SEQN"]].drop_duplicates()
+diet_soda_drinkers2 = diet_soda_day2[["SEQN"]].drop_duplicates()
+
+# Add a column to specify that these are diet soda drinkers
+diet_soda_drinkers1["SODADRINKER"] = True
+diet_soda_drinkers2["SODADRINKER"] = True
+
+# Merge BMI to dataset
+day1_cleaned = diet_soda_drinkers1.merge(
+    bmi[["SEQN", "BMXBMI"]],
+    left_on="SEQN",
+    right_on="SEQN",
+    how='left'
+)
+
+day2_cleaned = diet_soda_drinkers2.merge(
+    bmi[["SEQN", "BMXBMI"]],
+    left_on="SEQN",
+    right_on="SEQN",
+    how='left'
+)
+
+day2_cleaned.head()
+```
+
+```{python}
+# Identify non diet soda drinkers
+non_ds_drinkers1_cleaned = day1[~day1['SEQN'].isin(day1_cleaned['SEQN'])]
+non_ds_drinkers2_cleaned = day2[~day2['SEQN'].isin(day2_cleaned['SEQN'])]
+
+# Drop duplicates
+non_ds_drinkers1_cleaned = non_ds_drinkers1_cleaned[["SEQN"]].drop_duplicates()
+non_ds_drinkers2_cleaned = non_ds_drinkers2_cleaned[["SEQN"]].drop_duplicates()
+
+# Add a column to specify that these are NOT diet soda drinkers
+non_ds_drinkers1_cleaned["SODADRINKER"] = False
+non_ds_drinkers2_cleaned["SODADRINKER"] = False
+
+day1_cleaned_nosoda = non_ds_drinkers1_cleaned.merge(
+    bmi[["SEQN", "BMXBMI"]],
+    left_on="SEQN",
+    right_on="SEQN",
+    how='left'
+)
+
+day2_cleaned_nosoda = non_ds_drinkers2_cleaned.merge(
+    bmi[["SEQN", "BMXBMI"]],
+    left_on="SEQN",
+    right_on="SEQN",
+    how='left'
+)
+
+day2_cleaned_nosoda.head()
+```
+
+Add demographic, income, and more data that could act as potential confounders
+
+```{python}
+# Demographic Data
+demographics.head()
+
+day1_cleaned = day1_cleaned.merge(
+    demographics[["SEQN", "RIAGENDR", "RIDRETH1", "RIDAGEYR", "DMDEDUC2"]],
+    left_on="SEQN",
+    right_on="SEQN",
+    how='left'
+)
+
+day2_cleaned = day2_cleaned.merge(
+    demographics[["SEQN", "RIAGENDR", "RIDRETH1", "RIDAGEYR", "DMDEDUC2"]],
+    left_on="SEQN",
+    right_on="SEQN",
+    how='left'
+)
+
+day1_cleaned_nosoda = day1_cleaned_nosoda.merge(
+    demographics[["SEQN", "RIAGENDR", "RIDRETH1", "RIDAGEYR", "DMDEDUC2"]],
+    left_on="SEQN",
+    right_on="SEQN",
+    how='left'
+)
+
+day2_cleaned_nosoda = day2_cleaned_nosoda.merge(
+    demographics[["SEQN", "RIAGENDR", "RIDRETH1", "RIDAGEYR", "DMDEDUC2"]],
+    left_on="SEQN",
+    right_on="SEQN",
+    how='left'
+)
+
+day2_cleaned_nosoda.head()
+```
+
+
+```{python}
+# Income Data
+day1_cleaned = day1_cleaned.merge(
+    income[["SEQN", "IND235"]],
+    left_on="SEQN",
+    right_on="SEQN",
+    how='left'
+)
+
+day2_cleaned = day2_cleaned.merge(
+    income[["SEQN", "IND235"]],
+    left_on="SEQN",
+    right_on="SEQN",
+    how='left'
+)
+
+day1_cleaned_nosoda = day1_cleaned_nosoda.merge(
+    income[["SEQN", "IND235"]],
+    left_on="SEQN",
+    right_on="SEQN",
+    how='left'
+)
+
+day2_cleaned_nosoda = day2_cleaned_nosoda.merge(
+    income[["SEQN", "IND235"]],
+    left_on="SEQN",
+    right_on="SEQN",
+    how='left'
+)
+
+day2_cleaned_nosoda.head()
+```
+
+
+```{python}
+# Physical Activity Data
+day1_cleaned = day1_cleaned.merge(
+    physical_fitness[["SEQN", "PAQ605", "PAQ620"]],
+    left_on="SEQN",
+    right_on="SEQN",
+    how='left'
+)
+
+day2_cleaned = day2_cleaned.merge(
+    physical_fitness[["SEQN", "PAQ605", "PAQ620"]],
+    left_on="SEQN",
+    right_on="SEQN",
+    how='left'
+)
+
+day1_cleaned_nosoda = day1_cleaned_nosoda.merge(
+    physical_fitness[["SEQN", "PAQ605", "PAQ620"]],
+    left_on="SEQN",
+    right_on="SEQN",
+    how='left'
+)
+
+day2_cleaned_nosoda = day2_cleaned_nosoda.merge(
+    physical_fitness[["SEQN", "PAQ605", "PAQ620"]],
+    left_on="SEQN",
+    right_on="SEQN",
+    how='left'
+)
+
+day2_cleaned_nosoda.head()
+```
+
+
+```{python}
+# Weight History Data
+day1_cleaned = day1_cleaned.merge(
+    weight_history[["SEQN", "WHQ070"]],
+    left_on="SEQN",
+    right_on="SEQN",
+    how='left'
+)
+
+day2_cleaned = day2_cleaned.merge(
+    weight_history[["SEQN", "WHQ070"]],
+    left_on="SEQN",
+    right_on="SEQN",
+    how='left'
+)
+
+day1_cleaned_nosoda = day1_cleaned_nosoda.merge(
+    weight_history[["SEQN", "WHQ070"]],
+    left_on="SEQN",
+    right_on="SEQN",
+    how='left'
+)
+
+day2_cleaned_nosoda = day2_cleaned_nosoda.merge(
+    weight_history[["SEQN", "WHQ070"]],
+    left_on="SEQN",
+    right_on="SEQN",
+    how='left'
+)
+
+day2_cleaned_nosoda.head()
+```
+
+```{python}
+# Diet Healthiness Data
+day1_cleaned = day1_cleaned.merge(
+    diet[["SEQN", "DBQ700"]],
+    left_on="SEQN",
+    right_on="SEQN",
+    how='left'
+)
+
+day2_cleaned = day2_cleaned.merge(
+    diet[["SEQN", "DBQ700"]],
+    left_on="SEQN",
+    right_on="SEQN",
+    how='left'
+)
+
+day1_cleaned_nosoda = day1_cleaned_nosoda.merge(
+    diet[["SEQN", "DBQ700"]],
+    left_on="SEQN",
+    right_on="SEQN",
+    how='left'
+)
+
+day2_cleaned_nosoda = day2_cleaned_nosoda.merge(
+    diet[["SEQN", "DBQ700"]],
+    left_on="SEQN",
+    right_on="SEQN",
+    how='left'
+)
+
+day2_cleaned_nosoda.head()
+```
+
+
+```{python}
+# Convert column types to numeric
+day1_cleaned['SEQN'] = day1_cleaned['SEQN'].astype('Int64')
+day1_cleaned.iloc[:, 3:] = day1_cleaned.iloc[:, 3:].apply(pd.to_numeric, errors='coerce')
+
+day2_cleaned['SEQN'] = day2_cleaned['SEQN'].astype('Int64')
+day2_cleaned.iloc[:, 3:] = day2_cleaned.iloc[:, 3:].apply(pd.to_numeric, errors='coerce')
+
+day1_cleaned_nosoda['SEQN'] = day1_cleaned_nosoda['SEQN'].astype('Int64')
+day1_cleaned_nosoda.iloc[:, 3:] = day1_cleaned_nosoda.iloc[:, 3:].apply(pd.to_numeric, errors='coerce')
+
+day2_cleaned_nosoda['SEQN'] = day2_cleaned_nosoda['SEQN'].astype('Int64')
+day2_cleaned_nosoda.iloc[:, 3:] = day2_cleaned_nosoda.iloc[:, 3:].apply(pd.to_numeric, errors='coerce')
+
+# Concatenate the two dataframes
+day1 = pd.concat([day1_cleaned, day1_cleaned_nosoda], ignore_index=True)
+day2 = pd.concat([day2_cleaned, day2_cleaned_nosoda], ignore_index=True)
+
+# Sort based on SEQN
+day1 = day1.sort_values(by='SEQN').reset_index(drop = True)
+day2 = day2.sort_values(by='SEQN').reset_index(drop = True)
+
+day1.head()
+```
+
+```{python}
+## Handle NA Values
+
+## Identify columns with NA values
+na_columns_day1 = day1.columns[day1.isna().any()].tolist()
+na_columns_day2 = day2.columns[day2.isna().any()].tolist()
+
+print("Columns with NA values in day1:", na_columns_day1)
+print("Columns with NA values in day2:", na_columns_day2)
+
+## Drop rows where BMXBMI is NA
+day1 = day1.dropna(subset=['BMXBMI'])
+day2 = day2.dropna(subset=['BMXBMI'])
+
+## Drop children observations
+day1 = day1.dropna(subset=['DMDEDUC2'])
+day2 = day2.dropna(subset=['DMDEDUC2'])
+
+# Fill physical fitness NA's with 1 or 2 based on probabilities; drop values 7 or 9
+day1['PAQ605'] = day1['PAQ605'].apply(
+    lambda x: np.random.choice([1, 2], p=[1/3, 2/3]) if pd.isna(x) else x
+)
+
+day1['PAQ620'] = day1['PAQ620'].apply(
+    lambda x: np.random.choice([1, 2], p=[1/3, 2/3]) if pd.isna(x) else x
+)
+
+day2['PAQ605'] = day2['PAQ605'].apply(
+    lambda x: np.random.choice([1, 2], p=[1/3, 2/3]) if pd.isna(x) else x
+)
+
+day2['PAQ620'] = day2['PAQ620'].apply(
+    lambda x: np.random.choice([1, 2], p=[1/3, 2/3]) if pd.isna(x) else x
+)
+
+# Drop observations where physical fitness] info is unknown
+day1 = day1[~day1['PAQ605'].isin([7, 9])]
+day2 = day2[~day2['PAQ605'].isin([7, 9])]
+day1 = day1[~day1['PAQ620'].isin([7, 9])]
+day2 = day2[~day2['PAQ620'].isin([7, 9])]
+
+# Drop those not specifying intentional weight change
+day1 = day1.dropna(subset=['WHQ070'])
+day2 = day2.dropna(subset=['WHQ070'])
+
+## Assume good of fair diet for those with no response (assumption)
+day1['DBQ700'] = day1['DBQ700'].apply(
+    lambda x: np.random.choice([3, 4], p=[1/2, 1/2]) if pd.isna(x) else x
+)
+
+day2['DBQ700'] = day2['DBQ700'].apply(
+    lambda x: np.random.choice([3, 4], p=[1/2, 1/2]) if pd.isna(x) else x
+)
+
+day1.head()
+```
