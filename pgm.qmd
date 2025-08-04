@@ -1,0 +1,263 @@
+
+```{python}
+import pandas as pd
+import numpy as np
+import patchworklib as pw
+import pymc as pm
+import arviz as az
+```
+
+## Split Data
+
+```{python}
+from sklearn.model_selection import train_test_split
+
+clean_df = pd.read_csv("cleaned_data.csv")
+
+train_df, test_df = train_test_split(clean_df, test_size = 0.2, random_state = 5650)
+
+selected_prefixes = ['SODADRINKER', 'RIAGENDR', 'RIDAGEYR', 'PAQ605', 'PAQ620', 'WHQ070',
+                     'RIDRETH1_', 'DMDEDUC2_', 'IND235_', 'DBQ700_']
+
+# Filter columns using those prefixes
+X_train = train_df[[col for col in train_df.columns if any(col.startswith(prefix) for prefix in selected_prefixes)]]
+X_test = test_df[[col for col in test_df.columns if any(col.startswith(prefix) for prefix in selected_prefixes)]]
+
+# Target variable stays the same
+y_train = train_df['OBESE']
+y_test = test_df['OBESE']
+
+print(y_train.values)
+print(X_train.columns)
+```
+
+## Benchmark Model
+
+```{python}
+train_coords = {
+    'seqn_id': X_train.index.values
+}
+
+# Your code here: create a pm.Model object
+with pm.Model(coords=train_coords) as benchmark_model:
+    obese_obs = pm.Data('obese_obs', y_train.values, dims = 'seqn_id')
+
+    # Priors
+    p_obese = pm.Beta("p_obese", alpha = 1, beta = 1)
+    obese = pm.Bernoulli("obese", p = p_obese, observed = obese_obs, dims = 'seqn_id')
+
+pm.model_to_graphviz(benchmark_model)
+```
+
+```{python}
+with benchmark_model:
+    benchmark_idata = pm.sample(random_seed=5650)
+
+az.summary(benchmark_idata)
+```
+
+```{python}
+with benchmark_model:
+    benchmark_postpred_idata = pm.sample_posterior_predictive(benchmark_idata, random_seed=5650)
+
+az.summary(benchmark_postpred_idata)
+```
+
+```{python}
+samples = benchmark_postpred_idata.posterior_predictive['obese']
+benchmark_train_means = samples.mean(dim=("chain", "draw"))
+
+# Provided plot_roc() function: Please use this function to visualize the ROC curve for the scores in
+# nofeats_train_means, so that the autograder can evaluate your responses appropriately!
+from sklearn.metrics import RocCurveDisplay, auc, roc_curve
+def plot_roc(true_labels, pred_p_hire, plot_title="ROC Curve"):
+    ax = pw.Brick(figsize=(3, 3))
+    model_fpr, model_tpr, model_thresholds = roc_curve(
+        y_true=true_labels, y_score=pred_p_hire, pos_label=1, drop_intermediate=True
+    )
+    model_auc = auc(model_fpr, model_tpr)
+    roc_display = RocCurveDisplay(fpr=model_fpr, tpr=model_tpr, roc_auc=model_auc)
+    roc_display = roc_display.plot(ax=ax, marker="o", markersize=2, plot_chance_level=True)
+    ax.set_title(plot_title);
+    ax.legend(fontsize=10);
+    display(ax.savefig())
+    return model_auc
+plot_roc(y_train, benchmark_train_means, "Training ROC: No Features")
+```
+
+```{python}
+from collections import OrderedDict
+survey_model_aucs = OrderedDict()
+
+with benchmark_model:
+    pm.set_data({'obese_obs': np.ravel(y_test)}, coords = {'seqn_id': X_test.index.values})
+    benchmark_test_idata = pm.sample_posterior_predictive(benchmark_idata.posterior, random_seed=5650)
+    
+# Provided code step 1: Extract means of sayhire values from the posterior predictive
+# distribution given test data
+benchmark_test_meanhired = benchmark_test_idata.posterior_predictive['obese'].mean(dim=['chain','draw'])
+print(benchmark_test_meanhired.values)
+# Provided code step 2: Plot Test ROC curve
+benchmark_auc = plot_roc(y_test, benchmark_test_meanhired.values, "Test ROC: No Features")
+# Provided code step 3: Store the resulting AUC value in surv_model_aucs, and display the set of
+# AUCs we've computed thus far
+survey_model_aucs['obese'] = benchmark_auc
+survey_model_aucs
+```
+
+## Full Model
+
+```{python}
+coords = {'seqn_id': X_train.index.values}
+
+with pm.Model(coords=coords) as obesity_model:
+    # Observed outcome
+    obese_obs = pm.Data("obese_obs", np.ravel(y_train), dims="seqn_id")
+
+    # Continuous predictors
+    soda = pm.Data("soda", X_train["SODADRINKER"].values, dims="seqn_id")
+    age = pm.Data("age", X_train["RIDAGEYR"].values, dims="seqn_id")
+    gender = pm.Data("gender", X_train["RIAGENDR"].values, dims="seqn_id") # 1 represents female, 0 is male
+    paq605 = pm.Data("paq605", X_train["PAQ605"].values, dims="seqn_id") # 1 represents vigorous work activity present
+    paq620 = pm.Data("paq620", X_train["PAQ620"].values, dims="seqn_id") # 1 represents moderate work activity present
+    whq070 = pm.Data("whq070", X_train["WHQ070"].values, dims="seqn_id") # 1 represents intentional weight loss
+
+    # Dummy variable groups
+    race_cols = [col for col in X_train.columns if col.startswith("RIDRETH1_")]
+    edu_cols = [col for col in X_train.columns if col.startswith("DMDEDUC2_")]
+    income_cols = [col for col in X_train.columns if col.startswith("IND235_")]
+    diet_cols = [col for col in X_train.columns if col.startswith("DBQ700_")]
+
+    # Convert to numpy arrays
+    race_data = pm.Data("race_data", X_train[race_cols].values, dims=("seqn_id", "race_cat"))
+    edu_data = pm.Data("edu_data", X_train[edu_cols].values, dims=("seqn_id", "edu_cat"))
+    income_data = pm.Data("income_data", X_train[income_cols].values, dims=("seqn_id", "income_cat"))
+    diet_data = pm.Data("diet_data", X_train[diet_cols].values, dims=("seqn_id", "diet_cat"))
+
+    # Priors
+    alpha = pm.Beta("alpha", alpha=1, beta=1)
+    beta_soda = pm.Beta("beta_soda", alpha=2, beta=1) # Higher probability that drinking diet soda results in obesity (intuition)
+    beta_age = pm.Normal("beta_age", mu=0.05, sigma=0.05) # Age has slight impact on average BMI, as older adults tend to have higher BMIs
+    beta_gender = pm.Beta("beta_gender", alpha=1, beta=1) # Women often have higher BMIs
+    beta_paq605 = pm.Beta("beta_paq605", alpha=1, beta=3) # Some vigorous activity likely decreases your BMI
+    beta_paq620 = pm.Beta("beta_paq620", alpha=1, beta=2) # Some moderate activity likely decreases BMI (though not as much as vigorous)
+    beta_whq070 = pm.Beta("beta_whq070", alpha=1, beta=2) # Intentional weight loss should correspond with lower probability of obesity
+
+    beta_race = pm.Normal("beta_race", mu=0, sigma=1, dims="race_cat") # Assumed that there is no real difference between races
+
+    edu_prior_means = [0.3, 0.1, 0, -0.1, -0.3] # means become more negative as education level increases. Intuition here is that more education leads to a lower chance of being obese
+    beta_edu = pm.Normal("beta_edu", mu=edu_prior_means, sigma=0.6, dims="edu_cat") # The more educated you are, the less likely you are to be obese (intuition)
+    
+    income_prior_means = [0.3,  0.2,  0.15,  0.1, 0.05, 0.0, -0.1, -0.2, -0.3, -0.4, -0.5, -0.5] # means become more negative as income increases. Intuition here is that more income means you can buy healthier foods
+    beta_income = pm.Normal("beta_income", mu=income_prior_means, sigma=0.5, dims="income_cat") # Making more money allows for people to buy healthier foods, thus having a lower BMI/not being obese (intuition)
+    
+    diet_prior_means = [-0.6, -0.3, 0.1, 0.25, 0.4] # Increasing probability since a higher number means an unhealtier diet in this dataset
+    beta_diet = pm.Normal("beta_diet", mu=diet_prior_means, sigma=0.5, dims="diet_cat") # A healthier diet corresponds with lower BMI (intuition)
+
+    # Logistic regression equation
+    logit_p = (
+        alpha +
+        beta_soda * soda +
+        beta_age * age +
+        beta_gender * gender +
+        beta_paq605 * paq605 +
+        beta_paq620 * paq620 +
+        beta_whq070 * whq070 +
+        pm.math.dot(race_data, beta_race) +
+        pm.math.dot(edu_data, beta_edu) +
+        pm.math.dot(income_data, beta_income) +
+        pm.math.dot(diet_data, beta_diet)
+    )
+
+    p_obese = pm.Deterministic("p_obese", pm.math.invlogit(logit_p), dims="seqn_id")
+
+    # Likelihood
+    obesity = pm.Bernoulli("obesity", p=p_obese, observed=obese_obs, dims="seqn_id")
+
+    # Visualize PGM
+    pm.model_to_graphviz(obesity_model)
+
+```
+
+```{python}
+with obesity_model:
+    obesity_idata = pm.sample(random_seed=5650)
+
+summary_df = az.summary(obesity_idata)
+summary_df
+```
+
+```{python}
+with obesity_model:
+    obesity_postpred_idata = pm.sample_posterior_predictive(obesity_idata, random_seed=5650)
+
+az.summary(obesity_postpred_idata)
+```
+
+```{python}
+samples = obesity_postpred_idata.posterior_predictive['obesity']
+obesity_train_means = samples.mean(dim=("chain", "draw"))
+
+# Provided plot_roc() function: Please use this function to visualize the ROC curve for the scores in
+# nofeats_train_means, so that the autograder can evaluate your responses appropriately!
+from sklearn.metrics import RocCurveDisplay, auc, roc_curve
+def plot_roc(true_labels, pred_p_hire, plot_title="ROC Curve"):
+    ax = pw.Brick(figsize=(3, 3))
+    model_fpr, model_tpr, model_thresholds = roc_curve(
+        y_true=true_labels, y_score=pred_p_hire, pos_label=1, drop_intermediate=True
+    )
+    model_auc = auc(model_fpr, model_tpr)
+    roc_display = RocCurveDisplay(fpr=model_fpr, tpr=model_tpr, roc_auc=model_auc)
+    roc_display = roc_display.plot(ax=ax, marker="o", markersize=2, plot_chance_level=True)
+    ax.set_title(plot_title);
+    ax.legend(fontsize=10);
+    display(ax.savefig())
+    return model_auc
+plot_roc(y_train, obesity_train_means, "Training ROC: No Features")
+```
+
+```{python}
+full_test_coords = {
+    'seqn_id': X_test.index.values
+}
+
+# Have obesity model reference test data
+with obesity_model:
+    pm.set_data({
+        "obese_obs": np.ravel(y_test),
+        "soda": X_test["SODADRINKER"].values,
+        "age": X_test["RIDAGEYR"].values,
+        "gender": X_test["RIAGENDR"].values,
+        "paq605": X_test["PAQ605"].values,
+        "paq620": X_test["PAQ620"].values,
+        "whq070": X_test["WHQ070"].values,
+        "race_data": X_test[race_cols].values,
+        "edu_data": X_test[edu_cols].values,
+        "income_data": X_test[income_cols].values,
+        "diet_data": X_test[diet_cols].values
+    }, coords=full_test_coords)
+
+    obesity_test_idata = pm.sample_posterior_predictive(obesity_idata.posterior, random_seed=5650)
+    
+# Provided code step 1: Extract means of sayhire values from the posterior predictive
+# distribution given test data
+obesity_test_means = obesity_test_idata.posterior_predictive['obesity'].mean(dim=['chain','draw'])
+# Provided code step 2: Plot test ROC curve
+obesity_auc = plot_roc(y_test, obesity_test_means, "Test ROC: All Confounders")
+# Provided code step 3: Store the AUC score in the model_aucs dictionary
+survey_model_aucs['full_model'] = obesity_auc
+survey_model_aucs
+```
+
+## Extract Probability Difference
+
+```{python}
+alpha_mean = summary_df.loc["alpha", "mean"]
+beta_soda_mean = summary_df.loc["beta_soda", "mean"]
+
+p_nosoda = expit(alpha_mean)
+p_soda = expit(alpha_mean + beta_soda_mean)
+
+print(f"Probability of obesity given you don't drink diet soda: {p_nosoda}")
+print(f"Probability of obesity given you drink diet soda: {p_soda}")
+```

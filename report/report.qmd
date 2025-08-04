@@ -5,7 +5,13 @@ authors:
 date: 08/08/2025
 date-format: "D MMM YYYY"
 # number-sections: true
-format: 
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    toc-location: left
+    number-sections: true
+    theme: cosmo
   pdf:
     toc: true
     toc-depth: 2
@@ -26,13 +32,15 @@ editor: visual
 
 ## Abstract
 
+The obesity epidemic remains a pressing public health concern in the United States, and many food and beverage companies have capitalized on this crisis by marketing products that appeal to consumers' desire to lose weight. Among these, diet sodas have long been advertised as healthier alternatives to sugary beverages, often promoted on the basis that they contain zero calories. To achieve this, diet sodas are sweetened with non-caloric, and potentially addictive, artificial sweeteners such as sucralose and aspartame. Although these sweeteners do not contribute directly to caloric intake, several medical studies and expert analyses suggest that diet sodas may contribute to weight gain. This study aims to construct a comprehensive probabilistic graphical model (PGM) to estimate the causal impact of diet soda consumption on Body Mass Index (BMI). Using data from the National Health and Nutrition Examination Survey (NHANES) for the 2013–2014 survey cycle, this analysis provides a longitudinal view of participants’ dietary habits. Covariates related to each participant's demographics, income, fitness regiment, weight history, and overall diet were controlled to understand a the true causal impact. Results from the PGM suggest that individuals who regularly consume diet soda also increase their BMIs (**this is intuition rn**). These findings offer important implications for public health policy, suggesting the need for stronger regulation of the diet beverage industry and greater encouragement of healthier drink alternatives for individuals struggling with obesity.
+
 ## Introduction
 
 Obesity is a growing public health issue in the United States, with the epidemic continuing to worsen each year. According to the Centers for Disease Control and Prevention (CDC), the majority of U.S. states reported an obesity prevalence of over 30%, indicating that nearly one-third of Americans have a Body Mass Index (BMI) of 30 or higher [@cdc_adult_obesity_maps]. Although obesity is a nationwide concern, it is especially concentrated in the Midwest and South. In Texas, for instance, approximately 52% of males aged 15–24 were classified as overweight or obese in 2021. Even more striking, nearly 80% of men over the age of 25 in North Dakota were considered at least overweight. Future projections for the American obesity epidemic are more troubling. By the year 2050, it is estimated that one-fifth of children (ages 5–15), one-third of adolescents (ages 15–24), and two-thirds of adults (ages 25 and older) will be classified as obese [@ihme_lancet_obesity2050]. While BMI is not a perfect measure of health—often misclassifying highly muscular individuals and senior citizens—it remains a broadly accepted indicator of population-level health trends. Although genetics may predispose some individuals to higher weight, obesity in the U.S. is primarily driven by the foods and beverages that Americans regularly consume.
 
 The fast-paced American lifestyle encourages reliance on processed and ultra-processed foods, which are made affordable and accessible by the fast-food and packaged food industries. According to Dr. Leigh Frame—program director for the Integrative Medicine Programs and a clinical researcher at George Washington University—this dietary pattern is closely tied to weight gain, elevated fasting blood glucose, microbiome disruptions, and other health complications [@laster_frame_2019]. Regarding weight gain specifically, Frame and her colleagues cite a controlled inpatient study in which 20 adults were randomly assigned to follow either an ultra-processed or an unprocessed diet for two weeks. These diets were nutritionally matched in perceived calories, sugar, fat, fiber, and macronutrient content, yet participants on the ultra-processed diet consumed significantly more energy overall, particularly from carbohydrates and fats. This led to an average weight gain of 0.9 kg (p = 0.009), while those on the unprocessed diet lost a similar amount (p = 0.007) [@hall2019ultra]. These findings underscore the impact of food processing on energy intake and weight. While diet sodas are often marketed as a healthier alternative to sugary drinks, they remain ultra-processed and may pose similar risks.
 
-Beverage companies often tout diet sodas as a zero-calorie, health-conscious choice. For example, PepsiCo’s finance chief in 2023 claimed that aspartame-sweetened drinks “obviously have the benefit of being zero calorie” [@Rajesh2023]. However, a careful look at the science reveals more nuance. In a 2022 meta-analysis of randomized trials, McGlynn *et al.* found that substituting low- or no-calorie drinks for sugar-sweetened sodas led to only a small average weight loss (about –1.06 kg) [@McGlynn2022]. By contrast, large cohort studies consistently link frequent diet-soda consumption with higher risks of weight gain, obesity, diabetes, and cardiovascular disease [@McGlynn2022]. Likewise, Toews *et al.* (2019) reported that evidence from clinical and observational studies is generally low quality and shows essentially no long-term benefit of artificial sweeteners on weight [@Toews2019]. In fact, some data suggest diet-drink users may even compensate by eating more or experience altered metabolism—for example, sweeteners can disrupt normal appetite signaling and gut microbiota in ways that promote weight gain [@McGlynn2022]. Despite industry claims to the contrary [@Rajesh2023], scientific reviews indicate that drinking diet sodas is not clearly protective against obesity and may be associated with lasting metabolic harms [@McGlynn2022; @Toews2019].
+Beverage companies often tout diet sodas as a health-conscious choice. For example, PepsiCo’s finance chief in 2023 claimed that aspartame-sweetened drinks “obviously have the benefit of being zero calorie” [@Rajesh2023]. However, a careful look at the science reveals more nuance. In a 2022 meta-analysis of randomized trials, McGlynn *et al.* found that substituting low- or no-calorie drinks for sugar-sweetened sodas led to only a small average weight loss (about –1.06 kg) [@McGlynn2022]. By contrast, large cohort studies consistently link frequent diet-soda consumption with higher risks of weight gain, diabetes, and cardiovascular disease [@McGlynn2022]. In addition, Toews *et al.* (2019) reported that evidence from clinical and observational studies is generally low quality and shows essentially no long-term benefit of artificial sweeteners on weight [@Toews2019]. In fact, some data suggest diet-drink users may even compensate by eating more or experience altered metabolism—for example, sweeteners can disrupt normal appetite signaling and gut microbiota in ways that promote weight gain [@McGlynn2022]. Despite industry claims suggesting otherwise [@Rajesh2023], scientific reviews indicate that drinking diet sodas is not clearly protective against obesity and may be associated with lasting metabolic harms [@McGlynn2022; @Toews2019].
 
 This paper explores the causal impact of diet soda consumption on weight gain, addressing a public health issue that remains largely shrouded in uncertainty. While many consumers believe they are making a healthier choice by switching to diet alternatives, the evidence presented here suggests that diet soda may cause more harm than good in the long term.
 
@@ -45,25 +53,36 @@ To increase reliability, NHANES provides two non-consecutive 24-hour dietary rec
 The data cleaning process began with familiarization with NHANES food codes to accurately identify participants who reported consuming diet soda. Once these specific codes were isolated, participants were categorized accordingly. Relevant covariates were then merged using the SEQN variable, a unique identifier assigned to each participant. This integration enabled a structured and meaningful examination of diet-related patterns and outcomes. The table below outlines the names and definitions of specific variables used.
 
 | Variable Name | **Description** |
-|--------------------|----------------------------------------------------|
+|-----------------------|-------------------------------------------------|
 | **SEQN** | Respondent sequence number |
 | **SODADRINKER** | A boolean variable that identifies if a respondent drinks diet soda |
 | **BMXBMI** | Body Mass Index (kg/m\*\*2) |
 | **RIAGENDR** | Gender of the participant |
 | **RIDRETH1** | Reported race and Hispanic origin information |
 | **RIDAGEYR** | Age in years of the participant at the time of screening |
-| **DMDEDU2** | Education level (Adults 20+) |
-| **DMDEDU3** | Education level (Children 6-19) |
-| **IND235** | Compare outcomes of diet soda consumers vs. non-consumers using covariates |
+| **DMDEDU2** | Education level |
+| **IND235** | Monthly family income |
 | **PAQ610** | Number of days per week where vigorous activity is involved |
 | **PAQ625** | Number of days per week where moderate activity is involved |
 | **WHQ060** | Binary variable specifying if weight change is intentional |
 | **DBQ700** | Categorical variable specifying the healthiness of the participant's diet |
 
+Participants in the NHANES dataset ranged from children to adults; however, this study focused exclusively on adults. The BMI variable was transformed into a binary classifier to indicate obesity status. Individuals with a BMI of 30 or higher were classified as obese and assigned a value of 1 in the new `OBESE` variable, while those with a BMI below 30 were assigned a 0. This classification follows the CDC’s definition of obesity, which designates a BMI of 30 or greater as obese [@CDC_BMI_Categories].
+
 ## Methods
+
+This is the section where I will detail my developed probabilistic graphical model, outlining what covariates are forks, pipes, colliders, and proxies. I will discuss how I used logistic regression as well as propensity scores to make a sound model and conduct thoughtful analysis. I will also detail what variables I wanted to interact with each other.
 
 ## Results
 
+Here, I will discuss the results objectively. I will show the ROCs of a benchmark model compared to the more complex model. I will conduct a sensitivity analysis with the priors of the model, determining which prior probability distributions yield the best results given personal and professional intuitions about the public health sector. I will also outline the results of potential counterfactual scenarios, such as when everyone or no one
+
 ## Conclusions
 
+Based on the results, in which I expect there to be a direct relationship between diet soda consumption and an increase in BMI, I would urge policymakers to regulate the soda industry for the sake of American public health. I will re-cite my obesity statistics, discussing how regulation could help slow this troublesome trend. I would also urge policymakers to incentivize healthier eating habits overall as well as attempt to make healthier foods cheaper, as ultra-processed foods are a hindrance to public health.
+
 ## Future Work
+
+In this section, I will discuss how similar analysis should be conducted across a variety of different years. I will also discuss how the inclusion of additional variables can add depth to the analysis. This is because the 'causal diagram' will be more comprehensive, therefore better capturing the true causal effect. It must be stated that these included variables should NOT be colliders, as this will negatively impact the causal findings.
+
+If future researchers want to pivot from obesity, there are other perceived negative effects from diet soda that could be causally studied (e.g. on metabolic health, gut hormones, incident diabetes, etc).

@@ -1,0 +1,30 @@
+{
+  "cells": [
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "import pandas as pd\n",
+        "import numpy as np\n",
+        "import matplotlib.pyplot as plt\n",
+        "import seaborn as sns\n",
+        "import patchworklib as pw\n",
+        "import pymc as pm\n",
+        "import arviz as az"
+      ],
+      "id": "6d5b1618",
+      "execution_count": null,
+      "outputs": []
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "name": "base",
+      "language": "python",
+      "display_name": "Python (base)",
+      "path": "C:\\Users\\Chase\\AppData\\Roaming\\jupyter\\kernels\\base"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}

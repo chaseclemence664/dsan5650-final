@@ -80,8 +80,8 @@ diet_soda_drinkers1 = diet_soda_day1[["SEQN"]].drop_duplicates()
 diet_soda_drinkers2 = diet_soda_day2[["SEQN"]].drop_duplicates()
 
 # Add a column to specify that these are diet soda drinkers
-diet_soda_drinkers1["SODADRINKER"] = True
-diet_soda_drinkers2["SODADRINKER"] = True
+diet_soda_drinkers1["SODADRINKER"] = 1
+diet_soda_drinkers2["SODADRINKER"] = 1
 
 # Merge BMI to dataset
 day1_cleaned = diet_soda_drinkers1.merge(
@@ -111,8 +111,8 @@ non_ds_drinkers1_cleaned = non_ds_drinkers1_cleaned[["SEQN"]].drop_duplicates()
 non_ds_drinkers2_cleaned = non_ds_drinkers2_cleaned[["SEQN"]].drop_duplicates()
 
 # Add a column to specify that these are NOT diet soda drinkers
-non_ds_drinkers1_cleaned["SODADRINKER"] = False
-non_ds_drinkers2_cleaned["SODADRINKER"] = False
+non_ds_drinkers1_cleaned["SODADRINKER"] = 0
+non_ds_drinkers2_cleaned["SODADRINKER"] = 0
 
 day1_cleaned_nosoda = non_ds_drinkers1_cleaned.merge(
     bmi[["SEQN", "BMXBMI"]],
@@ -343,9 +343,11 @@ print("Columns with NA values in day2:", na_columns_day2)
 day1 = day1.dropna(subset=['BMXBMI'])
 day2 = day2.dropna(subset=['BMXBMI'])
 
-## Drop children observations
+## Drop children observations; drop observations with no recorded education level
 day1 = day1.dropna(subset=['DMDEDUC2'])
 day2 = day2.dropna(subset=['DMDEDUC2'])
+day1 = day1[~day1['DMDEDUC2'].isin([7, 9])]
+day2 = day2[~day2['DMDEDUC2'].isin([7, 9])]
 
 # Fill physical fitness NA's with 1 or 2 based on probabilities; drop values 7 or 9
 day1['PAQ605'] = day1['PAQ605'].apply(
@@ -370,6 +372,14 @@ day2 = day2[~day2['PAQ605'].isin([7, 9])]
 day1 = day1[~day1['PAQ620'].isin([7, 9])]
 day2 = day2[~day2['PAQ620'].isin([7, 9])]
 
+# Drop observations where income is unknown
+day1 = day1.dropna(subset=['IND235'])
+day2 = day2.dropna(subset=['IND235'])
+day1 = day1[~day1['IND235'].isin([77, 99])]
+day2 = day2[~day2['IND235'].isin([77, 99])]
+day1 = day1[~day1['IND235'].isin([77, 99])]
+day2 = day2[~day2['IND235'].isin([77, 99])]
+
 # Drop those not specifying intentional weight change
 day1 = day1.dropna(subset=['WHQ070'])
 day2 = day2.dropna(subset=['WHQ070'])
@@ -382,6 +392,62 @@ day1['DBQ700'] = day1['DBQ700'].apply(
 day2['DBQ700'] = day2['DBQ700'].apply(
     lambda x: np.random.choice([3, 4], p=[1/2, 1/2]) if pd.isna(x) else x
 )
+day1 = day1[~day1['DBQ700'].isin([7, 9])]
+day2 = day2[~day2['DBQ700'].isin([7, 9])]
 
 day1.head()
+```
+
+Create a one hot encoding of all of the multiclass classification variables for future logistic regression. Also adjust gender variable so that it is 0 and 1
+
+```{python}
+# Adjust some variables so that they are truly binary
+for col in ['RIAGENDR', 'PAQ605', 'PAQ620', 'WHQ070']:
+    day1[col] = day1[col] - 1
+    day2[col] = day2[col] - 1
+
+# Swap 0s and 1s in these variables since 1 indicates 'yes' usually
+for col in ['PAQ605', 'PAQ620', 'WHQ070']:
+    day1[col] = 1 - day1[col]
+    day2[col] = 1 - day2[col]
+
+# Create dummy variables for multiclass columns
+multiclass_cols = ['RIDRETH1', 'DMDEDUC2', 'IND235', 'DBQ700']
+
+day1 = pd.get_dummies(day1, columns=multiclass_cols, drop_first=False)
+day2 = pd.get_dummies(day2, columns=multiclass_cols, drop_first=False)
+```
+
+```{python}
+# Convert all boolean columns in day1 to 1/0
+day1 = day1.astype({col: int for col in day1.select_dtypes('bool').columns})
+
+# Convert all boolean columns in day2 to 1/0
+day2 = day2.astype({col: int for col in day2.select_dtypes('bool').columns})
+
+# Make sure sodadrinker column is integer type
+day1['SODADRINKER'] = day1['SODADRINKER'].astype(int)
+day2['SODADRINKER'] = day2['SODADRINKER'].astype(int)
+```
+
+Convert BMI into a binary variable where it is 1 if you are obese and 0 if not
+
+```{python}
+# Convert BMI into a binary variable where it is 1 if obese and 0 if not
+# Obesity is defined as BMI >= 30
+day1['OBESE'] = (day1['BMXBMI'] >= 30).astype(int)
+day2['OBESE'] = (day2['BMXBMI'] >= 30).astype(int)
+
+# Check if there are any NaN values in the 'OBESE' column
+has_nan = day1['OBESE'].isna().any()
+print(f"Are there any NaN values in 'OBESE' column? {has_nan}")
+```
+
+After looking at both day1 and day2, I noticed that there are mroe observations in day1. This could be because there was a failure of some participants to report on the second day. I decided to keep only day1 data for this analysis.
+
+```{python}
+day1.head()
+```
+```{python}
+day1.to_csv("./data/cleaned_data.csv", index = False)
 ```
