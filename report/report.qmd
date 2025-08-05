@@ -32,7 +32,7 @@ editor: visual
 
 ## Abstract
 
-The obesity epidemic remains a pressing public health concern in the United States, and many food and beverage companies have capitalized on this crisis by marketing products that appeal to consumers' desire to lose weight. Among these, diet sodas have long been advertised as healthier alternatives to sugary beverages, often promoted on the basis that they contain zero calories. To achieve this, diet sodas are sweetened with non-caloric, and potentially addictive, artificial sweeteners such as sucralose and aspartame. Although these sweeteners do not contribute directly to caloric intake, several medical studies and expert analyses suggest that diet sodas may contribute to weight gain. This study aims to construct a comprehensive probabilistic graphical model (PGM) to estimate the causal impact of diet soda consumption on Body Mass Index (BMI). Using data from the National Health and Nutrition Examination Survey (NHANES) for the 2013–2014 survey cycle, this analysis provides a longitudinal view of participants’ dietary habits. Covariates related to each participant's demographics, income, fitness regiment, weight history, and overall diet were controlled to understand a the true causal impact. Results from the PGM suggest that individuals who regularly consume diet soda also increase their BMIs (**this is intuition rn**). These findings offer important implications for public health policy, suggesting the need for stronger regulation of the diet beverage industry and greater encouragement of healthier drink alternatives for individuals struggling with obesity.
+The obesity epidemic remains a pressing public health concern in the United States, and many food and beverage companies have capitalized on this crisis by marketing products that appeal to consumers' desire to lose weight. Among these, diet sodas have long been advertised as healthier alternatives to sugary beverages, often promoted on the basis that they contain zero calories. To achieve this, diet sodas are sweetened with non-caloric, and potentially addictive, artificial sweeteners such as sucralose and aspartame. Although these sweeteners do not contribute directly to caloric intake, several medical studies and expert analyses suggest that diet sodas may contribute to weight gain. This study aims to construct a comprehensive probabilistic graphical model (PGM) to estimate the causal impact of diet soda consumption on obesity, as measured by Body Mass Index (BMI). Using data from the National Health and Nutrition Examination Survey (NHANES) for the 2013–2014 survey cycle, this analysis provides a longitudinal view of participants’ dietary habits. Covariates related to each participant's demographics, income, fitness regiment, weight history, and overall diet were controlled to understand a the true causal impact. Results from the PGM suggest that individuals who regularly consume diet soda have an increased probability of being obese. These findings offer important implications for public health policy, suggesting the need for stronger regulation of the diet beverage industry and greater encouragement of healthier drink alternatives for individuals struggling with obesity.
 
 ## Introduction
 
@@ -44,7 +44,7 @@ Beverage companies often tout diet sodas as a health-conscious choice. For examp
 
 This paper explores the causal impact of diet soda consumption on weight gain, addressing a public health issue that remains largely shrouded in uncertainty. While many consumers believe they are making a healthier choice by switching to diet alternatives, the evidence presented here suggests that diet soda may cause more harm than good in the long term.
 
-## Data
+## Data Gathering & Cleaning
 
 All data used in this analysis were obtained from the National Health and Nutrition Examination Survey (NHANES), a nationally representative program that collects detailed information on the dietary habits and nutrient intake of U.S. residents. NHANES employs a rigorous methodology, compiling a wide range of data including demographic information, dietary intake, physical examination findings, laboratory results, self-reported questionnaire responses, and more. This study focuses on a subset of these variables—specifically demographics, financial status, physical fitness indicators, self-perceived diet quality, and weight history—as potential confounders.
 
@@ -53,7 +53,7 @@ To increase reliability, NHANES provides two non-consecutive 24-hour dietary rec
 The data cleaning process began with familiarization with NHANES food codes to accurately identify participants who reported consuming diet soda. Once these specific codes were isolated, participants were categorized accordingly. Relevant covariates were then merged using the SEQN variable, a unique identifier assigned to each participant. This integration enabled a structured and meaningful examination of diet-related patterns and outcomes. The table below outlines the names and definitions of specific variables used.
 
 | Variable Name | **Description** |
-|-----------------------|-------------------------------------------------|
+|-------------------------|-----------------------------------------------|
 | **SEQN** | Respondent sequence number |
 | **SODADRINKER** | A boolean variable that identifies if a respondent drinks diet soda |
 | **BMXBMI** | Body Mass Index (kg/m\*\*2) |
@@ -69,20 +69,88 @@ The data cleaning process began with familiarization with NHANES food codes to a
 
 Participants in the NHANES dataset ranged from children to adults; however, this study focused exclusively on adults. The BMI variable was transformed into a binary classifier to indicate obesity status. Individuals with a BMI of 30 or higher were classified as obese and assigned a value of 1 in the new `OBESE` variable, while those with a BMI below 30 were assigned a 0. This classification follows the CDC’s definition of obesity, which designates a BMI of 30 or greater as obese [@CDC_BMI_Categories].
 
-## Methods
+## Methods - Causal Framework and Prior Distribution Justification
 
-This is the section where I will detail my developed probabilistic graphical model, outlining what covariates are forks, pipes, colliders, and proxies. I will discuss how I used logistic regression as well as propensity scores to make a sound model and conduct thoughtful analysis. I will also detail what variables I wanted to interact with each other.
+To estimate a causal effect of diet soda consumption on obesity, a **Probabilistic Graphical Model (PGM)** was constructed using relevant variables. As defined by Koller and Friedman in *Probabilistic Graphical Models: Principles and Techniques*, a PGM uses a graph-based structure to encode "a complex distribution over a high-dimensional space" [@koller2009probabilistic]. In simpler terms, PGMs allow us to represent a joint distribution over many interrelated random variables.
+
+PGMs are especially powerful for causal inference because they enable reasoning under uncertainty using **Bayes' Rule**, even in the presence of missing data. Within a PGM, one can assess how a treatment variable ( X ) (e.g., diet soda consumption) affects an outcome variable ( Y ) (e.g., obesity), while accounting for a set of confounding variables ( Z ).
+
+It is critical to classify confounding variables within the graph structure—typically as **Forks**, **Pipes**, **Colliders**, or **Proxies**:
+
+-   **Forks** (e.g., ( Z –\> X ) and ( Z –\> Y )) represent common causes; conditioning on them blocks spurious associations between ( X ) and ( Y ).
+-   **Pipes** (e.g., ( X –\> Z –\> Y )) lie on the causal path and can be conditioned on to block spurious associations.
+-   **Colliders** (e.g., ( X –\> Z \<-- Y )) induce spurious associations when conditioned upon and should generally be avoided.
+-   **Proxies** are variables correlated with an unmeasured confounder; conditioning on them may reduce confounding but introduces measurement error risk.
+
+The table below outlines how each variable was classified in the causal graph:
+
+### Variable Classification
+
+| Variable | Structure | Justification |
+|--------------------|----------------------|------------------------------|
+| RIAGENDR (Gender) | Fork | Influences both diet soda preferences and BMI via biological and social factors. |
+| RIDRETH1 (Race/Ethnicity) | Fork | Could be associated with dietary patterns and obesity risk. |
+| RIDAGEYR (Age) | Fork | Affects both likelihood of diet soda use and BMI due to metabolic changes. |
+| DMDEDU2 (Education Level) | Fork | Higher education correlates with better health knowledge and behaviors. |
+| IND235 (Income) | Fork | Income affects both dietary access and obesity risk. |
+| PAQ610 (Vigorous Activity) | Pipe | Lifestyle choices (like diet soda use) may influence activity levels, which in turn affect BMI. |
+| PAQ625 (Moderate Activity) | Pipe | Same pathway as vigorous activity, but with potentially weaker impact. |
+| WHQ060 (Intentional Weight Loss) | Collider | May result from both diet soda use and high BMI; conditioning would induce spurious correlation. |
+| DBQ700 (Diet Healthiness) | Fork; potentially a Collider | Could influence one's diet soda consumption as well as obesity risk; potential collider worries too. |
+
+In PGMs, we model uncertainty through **prior distributions** over each parameter, allowing Bayesian inference to incorporate existing knowledge. These priors reflect beliefs based on domain knowledge, rather than being purely data-driven.
+
+### Prior Distribution Justification
+
+| Parameter | Prior Dist. | Justification |
+|--------------------|--------------------------------|--------------------|
+| `alpha` | Beta(1, 1) | Non-informative; allows full range of baseline obesity rates. |
+| `beta_soda` | Beta(2, 1) | Reflects prior belief that diet soda likely increases obesity risk. |
+| `beta_age` | Normal(0.05, 0.05) | Older age tends to slightly increase BMI. |
+| `beta_gender` | Beta(1, 1) | Non-informative; allows model to learn gender effects from data. |
+| `beta_paq605` | Beta(1, 3) | Skewed toward lower BMI; vigorous exercise generally reduces obesity. |
+| `beta_paq620` | Beta(1, 2) | Similar to above, but assumes weaker effect. |
+| `beta_race` | Normal(0, 1), per category | Assumes no strong prior racial effect; allows data to dominate. |
+| `beta_edu` | Normal(μ, 0.6), per level | Prior means decrease with education, reflecting reduced obesity risk. |
+| `beta_income` | Normal(μ, 0.5), per level | Higher income linked to healthier dietary choices, thus lower obesity risk. |
+| `beta_diet` | Normal(μ, 0.5), per level | Assumes diet quality strongly impacts obesity risk. |
+
+*Note:* `WHQ060` (intentional weight loss) was excluded from the model to avoid **collider bias**.
+
+------------------------------------------------------------------------
+
+To estimate the causal effect of diet soda on obesity, a **Bayesian logistic regression** model was implemented. Logistic regression is well-suited for binary outcomes (such as obesity status), as it maps real-valued inputs to probabilities in the \[0, 1\] interval. Incorporating priors allows for uncertainty in the regression coefficients to be explicitly modeled.
+
+The model estimates:
+
+$$ 
+P(y = 1 \mid X) = \frac{1}{1 + e^{-(\beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots + \beta_p X_p)}}  
+$$
+
+Where:
+
+-   $P(y = 1 \mid X)$ is the probability that a participant is obese\
+-   $\beta_0$ is the prior-distributed intercept\
+-   $\beta_1, \beta_2, \ldots, \beta_p$ are the prior-distributed coefficients for the treatment variable (`SODADRINKER`) and covariates
+
+This approach enables flexible, principled inference that incorporates both observed data and prior domain expertise.
 
 ## Results
 
-Here, I will discuss the results objectively. I will show the ROCs of a benchmark model compared to the more complex model. I will conduct a sensitivity analysis with the priors of the model, determining which prior probability distributions yield the best results given personal and professional intuitions about the public health sector. I will also outline the results of potential counterfactual scenarios, such as when everyone or no one
+The results show that the model including all relevant confounding variables significantly outperforms the benchmark model, increasing the AUC score by approximately 0.11. The benchmark model achieved a test AUC of 0.515, while the full model reached a test AUC of about 0.622. This indicates that the full model is more effective at predicting obesity among U.S. adults. However, the most notable insight comes from the point estimates in the multivariate model: controlling for all other variables, individuals who regularly consume diet soda have a higher probability of being obese. Specifically, the model estimates that, within the NHANES dataset, an individual has about a 55% chance of being obese if they do not consume diet soda, compared to a 69% chance if they do. This implies that diet soda consumption is associated with a 14 percentage point increase in the likelihood of obesity.
 
-## Conclusions
+![Benchmark Model ROC](images/benchmark_auc-2.png)
 
-Based on the results, in which I expect there to be a direct relationship between diet soda consumption and an increase in BMI, I would urge policymakers to regulate the soda industry for the sake of American public health. I will re-cite my obesity statistics, discussing how regulation could help slow this troublesome trend. I would also urge policymakers to incentivize healthier eating habits overall as well as attempt to make healthier foods cheaper, as ultra-processed foods are a hindrance to public health.
+![Final Model ROC](images/full_model_auc-2.png)
 
-## Future Work
+## Conclusions & Future Work
 
-In this section, I will discuss how similar analysis should be conducted across a variety of different years. I will also discuss how the inclusion of additional variables can add depth to the analysis. This is because the 'causal diagram' will be more comprehensive, therefore better capturing the true causal effect. It must be stated that these included variables should NOT be colliders, as this will negatively impact the causal findings.
+Results indicate that including the aforementioned covariates enhances the model's predictive power. More importantly, they reveal a direct relationship between diet soda consumption and the likelihood of obesity. While beverage companies market diet soda as a healthier alternative, the data suggest otherwise—reinforcing the consensus in prior research that such beverages do not constitute a healthy lifestyle change.
 
-If future researchers want to pivot from obesity, there are other perceived negative effects from diet soda that could be causally studied (e.g. on metabolic health, gut hormones, incident diabetes, etc).
+Ultra-processed foods continue to degrade public health in the United States, and this study highlights that trend through the lens of seemingly health-conscious beverages. Health policymakers, assuming they act in the public's best interest, should consider regulations to curb the consumption of these products. Although such measures may have economic implications—particularly for the 'Big Food' industry—the long-term health benefits are likely to outweigh the short-term costs.
+
+Reducing the consumption of obesity-contributing foods would likely lead to a decline in chronic diseases and related health complications. Direct benefits include improved quality of life and increased life expectancy, while secondary effects may include reduced burdens on healthcare providers and greater productivity, as individuals with lower body weight often experience less fatigue. Ultimately, addressing obesity at its source could significantly enhance public health outcomes and foster healthier dietary habits across the population.
+
+The findings of this study provide a foundational understanding of the relationship between diet soda consumption and obesity risk; however, additional variables could be integrated to better isolate the causal effect. While the covariates used align with predictors commonly identified in urban health literature [@Rehm2008_urbanhealth_ssb], expanding the model to include other lifestyle and behavioral factors—such as alcohol consumption, duration and intensity of physical activity, and sleep quality—could enhance the precision of the estimated effect. These factors, if appropriately positioned in the causal graph, may help clarify indirect pathways and reduce omitted variable bias. However, it is critical to assess how these features relate to both the treatment (diet soda consumption) and the outcome (obesity) to avoid introducing colliders that could bias the model through spurious associations. Beyond refining the PGM, incorporating a propensity score approach could offer complementary insights by estimating counterfactual scenarios—such as the likelihood of obesity in individuals who do and do not consume diet soda—while adjusting for confounding variables.
+
+If future researchers choose to broaden the focus beyond obesity, several health outcomes warrant attention. For example, emerging evidence links diet soda consumption with increased risks of type 2 diabetes [@gardener2018diet; @McGlynn2022] and cardiovascular disease. Regardless of the chosen health outcome, the current body of research highlights the potential long-term harms of artificial sweetener consumption. As such, further investigation is essential to fully understand the broader health implications of diet soda and inform public health recommendations.

@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.5.57">
+<meta name="generator" content="quarto-1.6.40">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -49,13 +49,43 @@ div.csl-indent {
 <script src="report_files/libs/quarto-html/tippy.umd.min.js"></script>
 <script src="report_files/libs/quarto-html/anchor.min.js"></script>
 <link href="report_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="report_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="report_files/libs/quarto-html/quarto-syntax-highlighting-549806ee2085284f45b00abea8c6df48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="report_files/libs/bootstrap/bootstrap.min.js"></script>
 <link href="report_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="report_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<link href="report_files/libs/bootstrap/bootstrap-a1ff8711b79ae3724c050874b28d9907.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 </head><body>\usepackage{setspace}
+
 \doublespacing
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 
 
@@ -69,13 +99,12 @@ div.csl-indent {
   <ul class="collapse">
   <li><a href="#abstract" id="toc-abstract" class="nav-link active" data-scroll-target="#abstract"><span class="header-section-number">1</span> Abstract</a></li>
   <li><a href="#introduction" id="toc-introduction" class="nav-link" data-scroll-target="#introduction"><span class="header-section-number">2</span> Introduction</a></li>
-  <li><a href="#data" id="toc-data" class="nav-link" data-scroll-target="#data"><span class="header-section-number">3</span> Data</a></li>
-  <li><a href="#methods" id="toc-methods" class="nav-link" data-scroll-target="#methods"><span class="header-section-number">4</span> Methods</a></li>
+  <li><a href="#data-gathering-cleaning" id="toc-data-gathering-cleaning" class="nav-link" data-scroll-target="#data-gathering-cleaning"><span class="header-section-number">3</span> Data Gathering &amp; Cleaning</a></li>
+  <li><a href="#methods---causal-framework-and-prior-distribution-justification" id="toc-methods---causal-framework-and-prior-distribution-justification" class="nav-link" data-scroll-target="#methods---causal-framework-and-prior-distribution-justification"><span class="header-section-number">4</span> Methods - Causal Framework and Prior Distribution Justification</a></li>
   <li><a href="#results" id="toc-results" class="nav-link" data-scroll-target="#results"><span class="header-section-number">5</span> Results</a></li>
-  <li><a href="#conclusions" id="toc-conclusions" class="nav-link" data-scroll-target="#conclusions"><span class="header-section-number">6</span> Conclusions</a></li>
-  <li><a href="#future-work" id="toc-future-work" class="nav-link" data-scroll-target="#future-work"><span class="header-section-number">7</span> Future Work</a></li>
+  <li><a href="#conclusions-future-work" id="toc-conclusions-future-work" class="nav-link" data-scroll-target="#conclusions-future-work"><span class="header-section-number">6</span> Conclusions &amp; Future Work</a></li>
   </ul>
-<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="report.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></nav>
+<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="..\report.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></nav>
 </div>
 <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
 </div>
@@ -114,24 +143,24 @@ div.csl-indent {
 
 <section id="abstract" class="level2" data-number="1">
 <h2 data-number="1" class="anchored" data-anchor-id="abstract"><span class="header-section-number">1</span> Abstract</h2>
-<p>The obesity epidemic remains a pressing public health concern in the United States, and many food and beverage companies have capitalized on this crisis by marketing products that appeal to consumers’ desire to lose weight. Among these, diet sodas have long been advertised as healthier alternatives to sugary beverages, often promoted on the basis that they contain zero calories. To achieve this, diet sodas are sweetened with non-caloric, and potentially addictive, artificial sweeteners such as sucralose and aspartame. Although these sweeteners do not contribute directly to caloric intake, several medical studies and expert analyses suggest that diet sodas may contribute to weight gain. This study aims to construct a comprehensive probabilistic graphical model (PGM) to estimate the causal impact of diet soda consumption on Body Mass Index (BMI). Using data from the National Health and Nutrition Examination Survey (NHANES) for the 2013–2014 survey cycle, this analysis provides a longitudinal view of participants’ dietary habits. Covariates related to each participant’s demographics, income, fitness regiment, weight history, and overall diet were controlled to understand a the true causal impact. Results from the PGM suggest that individuals who regularly consume diet soda also increase their BMIs (<strong>this is intuition rn</strong>). These findings offer important implications for public health policy, suggesting the need for stronger regulation of the diet beverage industry and greater encouragement of healthier drink alternatives for individuals struggling with obesity.</p>
+<p>The obesity epidemic remains a pressing public health concern in the United States, and many food and beverage companies have capitalized on this crisis by marketing products that appeal to consumers’ desire to lose weight. Among these, diet sodas have long been advertised as healthier alternatives to sugary beverages, often promoted on the basis that they contain zero calories. To achieve this, diet sodas are sweetened with non-caloric, and potentially addictive, artificial sweeteners such as sucralose and aspartame. Although these sweeteners do not contribute directly to caloric intake, several medical studies and expert analyses suggest that diet sodas may contribute to weight gain. This study aims to construct a comprehensive probabilistic graphical model (PGM) to estimate the causal impact of diet soda consumption on obesity, as measured by Body Mass Index (BMI). Using data from the National Health and Nutrition Examination Survey (NHANES) for the 2013–2014 survey cycle, this analysis provides a longitudinal view of participants’ dietary habits. Covariates related to each participant’s demographics, income, fitness regiment, weight history, and overall diet were controlled to understand a the true causal impact. Results from the PGM suggest that individuals who regularly consume diet soda have an increased probability of being obese. These findings offer important implications for public health policy, suggesting the need for stronger regulation of the diet beverage industry and greater encouragement of healthier drink alternatives for individuals struggling with obesity.</p>
 </section>
 <section id="introduction" class="level2" data-number="2">
 <h2 data-number="2" class="anchored" data-anchor-id="introduction"><span class="header-section-number">2</span> Introduction</h2>
 <p>Obesity is a growing public health issue in the United States, with the epidemic continuing to worsen each year. According to the Centers for Disease Control and Prevention (CDC), the majority of U.S. states reported an obesity prevalence of over 30%, indicating that nearly one-third of Americans have a Body Mass Index (BMI) of 30 or higher <span class="citation" data-cites="cdc_adult_obesity_maps">(<a href="#ref-cdc_adult_obesity_maps" role="doc-biblioref">Centers for Disease Control and Prevention (CDC) 2024</a>)</span>. Although obesity is a nationwide concern, it is especially concentrated in the Midwest and South. In Texas, for instance, approximately 52% of males aged 15–24 were classified as overweight or obese in 2021. Even more striking, nearly 80% of men over the age of 25 in North Dakota were considered at least overweight. Future projections for the American obesity epidemic are more troubling. By the year 2050, it is estimated that one-fifth of children (ages 5–15), one-third of adolescents (ages 15–24), and two-thirds of adults (ages 25 and older) will be classified as obese <span class="citation" data-cites="ihme_lancet_obesity2050">(<a href="#ref-ihme_lancet_obesity2050" role="doc-biblioref">Institute for Health Metrics and Evaluation (IHME) 2024</a>)</span>. While BMI is not a perfect measure of health—often misclassifying highly muscular individuals and senior citizens—it remains a broadly accepted indicator of population-level health trends. Although genetics may predispose some individuals to higher weight, obesity in the U.S. is primarily driven by the foods and beverages that Americans regularly consume.</p>
 <p>The fast-paced American lifestyle encourages reliance on processed and ultra-processed foods, which are made affordable and accessible by the fast-food and packaged food industries. According to Dr.&nbsp;Leigh Frame—program director for the Integrative Medicine Programs and a clinical researcher at George Washington University—this dietary pattern is closely tied to weight gain, elevated fasting blood glucose, microbiome disruptions, and other health complications <span class="citation" data-cites="laster_frame_2019">(<a href="#ref-laster_frame_2019" role="doc-biblioref">Laster and Frame 2019</a>)</span>. Regarding weight gain specifically, Frame and her colleagues cite a controlled inpatient study in which 20 adults were randomly assigned to follow either an ultra-processed or an unprocessed diet for two weeks. These diets were nutritionally matched in perceived calories, sugar, fat, fiber, and macronutrient content, yet participants on the ultra-processed diet consumed significantly more energy overall, particularly from carbohydrates and fats. This led to an average weight gain of 0.9 kg (p = 0.009), while those on the unprocessed diet lost a similar amount (p = 0.007) <span class="citation" data-cites="hall2019ultra">(<a href="#ref-hall2019ultra" role="doc-biblioref">Hall et al. 2019</a>)</span>. These findings underscore the impact of food processing on energy intake and weight. While diet sodas are often marketed as a healthier alternative to sugary drinks, they remain ultra-processed and may pose similar risks.</p>
-<p>Beverage companies often tout diet sodas as a zero-calorie, health-conscious choice. For example, PepsiCo’s finance chief in 2023 claimed that aspartame-sweetened drinks “obviously have the benefit of being zero calorie” <span class="citation" data-cites="Rajesh2023">(<a href="#ref-Rajesh2023" role="doc-biblioref">Rajesh 2023</a>)</span>. However, a careful look at the science reveals more nuance. In a 2022 meta-analysis of randomized trials, McGlynn <em>et al.</em> found that substituting low- or no-calorie drinks for sugar-sweetened sodas led to only a small average weight loss (about –1.06 kg) <span class="citation" data-cites="McGlynn2022">(<a href="#ref-McGlynn2022" role="doc-biblioref">McGlynn et al. 2022</a>)</span>. By contrast, large cohort studies consistently link frequent diet-soda consumption with higher risks of weight gain, diabetes, and cardiovascular disease <span class="citation" data-cites="McGlynn2022">(<a href="#ref-McGlynn2022" role="doc-biblioref">McGlynn et al. 2022</a>)</span>. In addition, Toews <em>et al.</em> (2019) reported that evidence from clinical and observational studies is generally low quality and shows essentially no long-term benefit of artificial sweeteners on weight <span class="citation" data-cites="Toews2019">(<a href="#ref-Toews2019" role="doc-biblioref">Toews et al. 2019</a>)</span>. In fact, some data suggest diet-drink users may even compensate by eating more or experience altered metabolism—for example, sweeteners can disrupt normal appetite signaling and gut microbiota in ways that promote weight gain <span class="citation" data-cites="McGlynn2022">(<a href="#ref-McGlynn2022" role="doc-biblioref">McGlynn et al. 2022</a>)</span>. Despite industry claims suggesting otherwise <span class="citation" data-cites="Rajesh2023">(<a href="#ref-Rajesh2023" role="doc-biblioref">Rajesh 2023</a>)</span>, scientific reviews indicate that drinking diet sodas is not clearly protective against obesity and may be associated with lasting metabolic harms <span class="citation" data-cites="McGlynn2022 Toews2019">(<a href="#ref-McGlynn2022" role="doc-biblioref">McGlynn et al. 2022</a>; <a href="#ref-Toews2019" role="doc-biblioref">Toews et al. 2019</a>)</span>.</p>
+<p>Beverage companies often tout diet sodas as a health-conscious choice. For example, PepsiCo’s finance chief in 2023 claimed that aspartame-sweetened drinks “obviously have the benefit of being zero calorie” <span class="citation" data-cites="Rajesh2023">(<a href="#ref-Rajesh2023" role="doc-biblioref">Rajesh 2023</a>)</span>. However, a careful look at the science reveals more nuance. In a 2022 meta-analysis of randomized trials, McGlynn <em>et al.</em> found that substituting low- or no-calorie drinks for sugar-sweetened sodas led to only a small average weight loss (about –1.06 kg) <span class="citation" data-cites="McGlynn2022">(<a href="#ref-McGlynn2022" role="doc-biblioref">McGlynn et al. 2022</a>)</span>. By contrast, large cohort studies consistently link frequent diet-soda consumption with higher risks of weight gain, diabetes, and cardiovascular disease <span class="citation" data-cites="McGlynn2022">(<a href="#ref-McGlynn2022" role="doc-biblioref">McGlynn et al. 2022</a>)</span>. In addition, Toews <em>et al.</em> (2019) reported that evidence from clinical and observational studies is generally low quality and shows essentially no long-term benefit of artificial sweeteners on weight <span class="citation" data-cites="Toews2019">(<a href="#ref-Toews2019" role="doc-biblioref">Toews et al. 2019</a>)</span>. In fact, some data suggest diet-drink users may even compensate by eating more or experience altered metabolism—for example, sweeteners can disrupt normal appetite signaling and gut microbiota in ways that promote weight gain <span class="citation" data-cites="McGlynn2022">(<a href="#ref-McGlynn2022" role="doc-biblioref">McGlynn et al. 2022</a>)</span>. Despite industry claims suggesting otherwise <span class="citation" data-cites="Rajesh2023">(<a href="#ref-Rajesh2023" role="doc-biblioref">Rajesh 2023</a>)</span>, scientific reviews indicate that drinking diet sodas is not clearly protective against obesity and may be associated with lasting metabolic harms <span class="citation" data-cites="McGlynn2022 Toews2019">(<a href="#ref-McGlynn2022" role="doc-biblioref">McGlynn et al. 2022</a>; <a href="#ref-Toews2019" role="doc-biblioref">Toews et al. 2019</a>)</span>.</p>
 <p>This paper explores the causal impact of diet soda consumption on weight gain, addressing a public health issue that remains largely shrouded in uncertainty. While many consumers believe they are making a healthier choice by switching to diet alternatives, the evidence presented here suggests that diet soda may cause more harm than good in the long term.</p>
 </section>
-<section id="data" class="level2" data-number="3">
-<h2 data-number="3" class="anchored" data-anchor-id="data"><span class="header-section-number">3</span> Data</h2>
+<section id="data-gathering-cleaning" class="level2" data-number="3">
+<h2 data-number="3" class="anchored" data-anchor-id="data-gathering-cleaning"><span class="header-section-number">3</span> Data Gathering &amp; Cleaning</h2>
 <p>All data used in this analysis were obtained from the National Health and Nutrition Examination Survey (NHANES), a nationally representative program that collects detailed information on the dietary habits and nutrient intake of U.S. residents. NHANES employs a rigorous methodology, compiling a wide range of data including demographic information, dietary intake, physical examination findings, laboratory results, self-reported questionnaire responses, and more. This study focuses on a subset of these variables—specifically demographics, financial status, physical fitness indicators, self-perceived diet quality, and weight history—as potential confounders.</p>
 <p>To increase reliability, NHANES provides two non-consecutive 24-hour dietary recall datasets for each participant, spaced approximately 30 days apart. Although NHANES is conducted annually using consistent data collection protocols, the quality and completeness of post-pandemic data have declined. For this reason, data from the 2013–2014 cycle were selected for this analysis, though the methods described here are generalizable to other NHANES cycles.</p>
 <p>The data cleaning process began with familiarization with NHANES food codes to accurately identify participants who reported consuming diet soda. Once these specific codes were isolated, participants were categorized accordingly. Relevant covariates were then merged using the SEQN variable, a unique identifier assigned to each participant. This integration enabled a structured and meaningful examination of diet-related patterns and outcomes. The table below outlines the names and definitions of specific variables used.</p>
 <table class="caption-top table">
 <colgroup>
-<col style="width: 29%">
-<col style="width: 70%">
+<col style="width: 34%">
+<col style="width: 65%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -166,11 +195,11 @@ div.csl-indent {
 </tr>
 <tr class="odd">
 <td><strong>DMDEDU2</strong></td>
-<td>Education level (Adults 20+)</td>
+<td>Education level</td>
 </tr>
 <tr class="even">
 <td><strong>IND235</strong></td>
-<td>Compare outcomes of diet soda consumers vs.&nbsp;non-consumers using covariates</td>
+<td>Monthly family income</td>
 </tr>
 <tr class="odd">
 <td><strong>PAQ610</strong></td>
@@ -190,35 +219,215 @@ div.csl-indent {
 </tr>
 </tbody>
 </table>
+<p>Participants in the NHANES dataset ranged from children to adults; however, this study focused exclusively on adults. The BMI variable was transformed into a binary classifier to indicate obesity status. Individuals with a BMI of 30 or higher were classified as obese and assigned a value of 1 in the new <code>OBESE</code> variable, while those with a BMI below 30 were assigned a 0. This classification follows the CDC’s definition of obesity, which designates a BMI of 30 or greater as obese <span class="citation" data-cites="CDC_BMI_Categories">(<a href="#ref-CDC_BMI_Categories" role="doc-biblioref">Centers for Disease Control and Prevention 2023</a>)</span>.</p>
 </section>
-<section id="methods" class="level2" data-number="4">
-<h2 data-number="4" class="anchored" data-anchor-id="methods"><span class="header-section-number">4</span> Methods</h2>
-<p>This is the section where I will detail my developed probabilistic graphical model, outlining what covariates are forks, pipes, colliders, and proxies. I will discuss how I used logistic regression as well as propensity scores to make a sound model and conduct thoughtful analysis. I will also detail what variables I wanted to interact with each other.</p>
+<section id="methods---causal-framework-and-prior-distribution-justification" class="level2" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="methods---causal-framework-and-prior-distribution-justification"><span class="header-section-number">4</span> Methods - Causal Framework and Prior Distribution Justification</h2>
+<p>To estimate a causal effect of diet soda consumption on obesity, a <strong>Probabilistic Graphical Model (PGM)</strong> was constructed using relevant variables. As defined by Koller and Friedman in <em>Probabilistic Graphical Models: Principles and Techniques</em>, a PGM uses a graph-based structure to encode “a complex distribution over a high-dimensional space” <span class="citation" data-cites="koller2009probabilistic">(<a href="#ref-koller2009probabilistic" role="doc-biblioref">Koller and Friedman 2009</a>)</span>. In simpler terms, PGMs allow us to represent a joint distribution over many interrelated random variables.</p>
+<p>PGMs are especially powerful for causal inference because they enable reasoning under uncertainty using <strong>Bayes’ Rule</strong>, even in the presence of missing data. Within a PGM, one can assess how a treatment variable ( X ) (e.g., diet soda consumption) affects an outcome variable ( Y ) (e.g., obesity), while accounting for a set of confounding variables ( Z ).</p>
+<p>It is critical to classify confounding variables within the graph structure—typically as <strong>Forks</strong>, <strong>Pipes</strong>, <strong>Colliders</strong>, or <strong>Proxies</strong>:</p>
+<ul>
+<li><strong>Forks</strong> (e.g., ( Z –&gt; X ) and ( Z –&gt; Y )) represent common causes; conditioning on them blocks spurious associations between ( X ) and ( Y ).</li>
+<li><strong>Pipes</strong> (e.g., ( X –&gt; Z –&gt; Y )) lie on the causal path and can be conditioned on to block spurious associations.</li>
+<li><strong>Colliders</strong> (e.g., ( X –&gt; Z &lt;– Y )) induce spurious associations when conditioned upon and should generally be avoided.</li>
+<li><strong>Proxies</strong> are variables correlated with an unmeasured confounder; conditioning on them may reduce confounding but introduces measurement error risk.</li>
+</ul>
+<p>The table below outlines how each variable was classified in the causal graph:</p>
+<section id="variable-classification" class="level3" data-number="4.1">
+<h3 data-number="4.1" class="anchored" data-anchor-id="variable-classification"><span class="header-section-number">4.1</span> Variable Classification</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 27%">
+<col style="width: 30%">
+<col style="width: 41%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Variable</th>
+<th>Structure</th>
+<th>Justification</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>RIAGENDR (Gender)</td>
+<td>Fork</td>
+<td>Influences both diet soda preferences and BMI via biological and social factors.</td>
+</tr>
+<tr class="even">
+<td>RIDRETH1 (Race/Ethnicity)</td>
+<td>Fork</td>
+<td>Could be associated with dietary patterns and obesity risk.</td>
+</tr>
+<tr class="odd">
+<td>RIDAGEYR (Age)</td>
+<td>Fork</td>
+<td>Affects both likelihood of diet soda use and BMI due to metabolic changes.</td>
+</tr>
+<tr class="even">
+<td>DMDEDU2 (Education Level)</td>
+<td>Fork</td>
+<td>Higher education correlates with better health knowledge and behaviors.</td>
+</tr>
+<tr class="odd">
+<td>IND235 (Income)</td>
+<td>Fork</td>
+<td>Income affects both dietary access and obesity risk.</td>
+</tr>
+<tr class="even">
+<td>PAQ610 (Vigorous Activity)</td>
+<td>Pipe</td>
+<td>Lifestyle choices (like diet soda use) may influence activity levels, which in turn affect BMI.</td>
+</tr>
+<tr class="odd">
+<td>PAQ625 (Moderate Activity)</td>
+<td>Pipe</td>
+<td>Same pathway as vigorous activity, but with potentially weaker impact.</td>
+</tr>
+<tr class="even">
+<td>WHQ060 (Intentional Weight Loss)</td>
+<td>Collider</td>
+<td>May result from both diet soda use and high BMI; conditioning would induce spurious correlation.</td>
+</tr>
+<tr class="odd">
+<td>DBQ700 (Diet Healthiness)</td>
+<td>Fork; potentially a Collider</td>
+<td>Could influence one’s diet soda consumption as well as obesity risk; potential collider worries too.</td>
+</tr>
+</tbody>
+</table>
+<p>In PGMs, we model uncertainty through <strong>prior distributions</strong> over each parameter, allowing Bayesian inference to incorporate existing knowledge. These priors reflect beliefs based on domain knowledge, rather than being purely data-driven.</p>
+</section>
+<section id="prior-distribution-justification" class="level3" data-number="4.2">
+<h3 data-number="4.2" class="anchored" data-anchor-id="prior-distribution-justification"><span class="header-section-number">4.2</span> Prior Distribution Justification</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 27%">
+<col style="width: 44%">
+<col style="width: 27%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Parameter</th>
+<th>Prior Dist.</th>
+<th>Justification</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>alpha</code></td>
+<td>Beta(1, 1)</td>
+<td>Non-informative; allows full range of baseline obesity rates.</td>
+</tr>
+<tr class="even">
+<td><code>beta_soda</code></td>
+<td>Beta(2, 1)</td>
+<td>Reflects prior belief that diet soda likely increases obesity risk.</td>
+</tr>
+<tr class="odd">
+<td><code>beta_age</code></td>
+<td>Normal(0.05, 0.05)</td>
+<td>Older age tends to slightly increase BMI.</td>
+</tr>
+<tr class="even">
+<td><code>beta_gender</code></td>
+<td>Beta(1, 1)</td>
+<td>Non-informative; allows model to learn gender effects from data.</td>
+</tr>
+<tr class="odd">
+<td><code>beta_paq605</code></td>
+<td>Beta(1, 3)</td>
+<td>Skewed toward lower BMI; vigorous exercise generally reduces obesity.</td>
+</tr>
+<tr class="even">
+<td><code>beta_paq620</code></td>
+<td>Beta(1, 2)</td>
+<td>Similar to above, but assumes weaker effect.</td>
+</tr>
+<tr class="odd">
+<td><code>beta_race</code></td>
+<td>Normal(0, 1), per category</td>
+<td>Assumes no strong prior racial effect; allows data to dominate.</td>
+</tr>
+<tr class="even">
+<td><code>beta_edu</code></td>
+<td>Normal(μ, 0.6), per level</td>
+<td>Prior means decrease with education, reflecting reduced obesity risk.</td>
+</tr>
+<tr class="odd">
+<td><code>beta_income</code></td>
+<td>Normal(μ, 0.5), per level</td>
+<td>Higher income linked to healthier dietary choices, thus lower obesity risk.</td>
+</tr>
+<tr class="even">
+<td><code>beta_diet</code></td>
+<td>Normal(μ, 0.5), per level</td>
+<td>Assumes diet quality strongly impacts obesity risk.</td>
+</tr>
+</tbody>
+</table>
+<p><em>Note:</em> <code>WHQ060</code> (intentional weight loss) was excluded from the model to avoid <strong>collider bias</strong>.</p>
+<hr>
+<p>To estimate the causal effect of diet soda on obesity, a <strong>Bayesian logistic regression</strong> model was implemented. Logistic regression is well-suited for binary outcomes (such as obesity status), as it maps real-valued inputs to probabilities in the [0, 1] interval. Incorporating priors allows for uncertainty in the regression coefficients to be explicitly modeled.</p>
+<p>The model estimates:</p>
+<p><span class="math display">\[
+P(y = 1 \mid X) = \frac{1}{1 + e^{-(\beta_0 + \beta_1 X_1 + \beta_2 X_2 + \cdots + \beta_p X_p)}}  
+\]</span></p>
+<p>Where:</p>
+<ul>
+<li><span class="math inline">\(P(y = 1 \mid X)\)</span> is the probability that a participant is obese<br>
+</li>
+<li><span class="math inline">\(\beta_0\)</span> is the prior-distributed intercept<br>
+</li>
+<li><span class="math inline">\(\beta_1, \beta_2, \ldots, \beta_p\)</span> are the prior-distributed coefficients for the treatment variable (<code>SODADRINKER</code>) and covariates</li>
+</ul>
+<p>This approach enables flexible, principled inference that incorporates both observed data and prior domain expertise.</p>
+</section>
 </section>
 <section id="results" class="level2" data-number="5">
 <h2 data-number="5" class="anchored" data-anchor-id="results"><span class="header-section-number">5</span> Results</h2>
-<p>Here, I will discuss the results objectively. I will show the ROCs of a benchmark model compared to the more complex model. I will conduct a sensitivity analysis with the priors of the model, determining which prior probability distributions yield the best results given personal and professional intuitions about the public health sector. I will also outline the results of potential counterfactual scenarios, such as when everyone or no one</p>
+<p>The results show that the model including all relevant confounding variables significantly outperforms the benchmark model, increasing the AUC score by approximately 0.11. The benchmark model achieved a test AUC of 0.515, while the full model reached a test AUC of about 0.622. This indicates that the full model is more effective at predicting obesity among U.S. adults. However, the most notable insight comes from the point estimates in the multivariate model: controlling for all other variables, individuals who regularly consume diet soda have a higher probability of being obese. Specifically, the model estimates that, within the NHANES dataset, an individual has about a 55% chance of being obese if they do not consume diet soda, compared to a 69% chance if they do. This implies that diet soda consumption is associated with a 14 percentage point increase in the likelihood of obesity.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/benchmark_auc-2.png" class="img-fluid figure-img"></p>
+<figcaption>Benchmark Model ROC</figcaption>
+</figure>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/full_model_auc-2.png" class="img-fluid figure-img"></p>
+<figcaption>Final Model ROC</figcaption>
+</figure>
+</div>
 </section>
-<section id="conclusions" class="level2" data-number="6">
-<h2 data-number="6" class="anchored" data-anchor-id="conclusions"><span class="header-section-number">6</span> Conclusions</h2>
-<p>Based on the results, in which I expect there to be a direct relationship between diet soda consumption and an increase in BMI, I would urge policymakers to regulate the soda industry for the sake of American public health. I will re-cite my obesity statistics, discussing how regulation could help slow this troublesome trend. I would also urge policymakers to incentivize healthier eating habits overall as well as attempt to make healthier foods cheaper, as ultra-processed foods are a hindrance to public health.</p>
-</section>
-<section id="future-work" class="level2" data-number="7">
-<h2 data-number="7" class="anchored" data-anchor-id="future-work"><span class="header-section-number">7</span> Future Work</h2>
-<p>In this section, I will discuss how similar analysis should be conducted across a variety of different years. I will also discuss how the inclusion of additional variables can add depth to the analysis. This is because the ‘causal diagram’ will be more comprehensive, therefore better capturing the true causal effect. It must be stated that these included variables should NOT be colliders, as this will negatively impact the causal findings.</p>
-<p>If future researchers want to pivot from obesity, there are other perceived negative effects from diet soda that could be causally studied (e.g.&nbsp;on metabolic health, gut hormones, incident diabetes, etc).</p>
+<section id="conclusions-future-work" class="level2" data-number="6">
+<h2 data-number="6" class="anchored" data-anchor-id="conclusions-future-work"><span class="header-section-number">6</span> Conclusions &amp; Future Work</h2>
+<p>Results indicate that including the aforementioned covariates enhances the model’s predictive power. More importantly, they reveal a direct relationship between diet soda consumption and the likelihood of obesity. While beverage companies market diet soda as a healthier alternative, the data suggest otherwise—reinforcing the consensus in prior research that such beverages do not constitute a healthy lifestyle change.</p>
+<p>Ultra-processed foods continue to degrade public health in the United States, and this study highlights that trend through the lens of seemingly health-conscious beverages. Health policymakers, assuming they act in the public’s best interest, should consider regulations to curb the consumption of these products. Although such measures may have economic implications—particularly for the ‘Big Food’ industry—the long-term health benefits are likely to outweigh the short-term costs.</p>
+<p>Reducing the consumption of obesity-contributing foods would likely lead to a decline in chronic diseases and related health complications. Direct benefits include improved quality of life and increased life expectancy, while secondary effects may include reduced burdens on healthcare providers and greater productivity, as individuals with lower body weight often experience less fatigue. Ultimately, addressing obesity at its source could significantly enhance public health outcomes and foster healthier dietary habits across the population.</p>
+<p>The findings of this study provide a foundational understanding of the relationship between diet soda consumption and obesity risk; however, additional variables could be integrated to better isolate the causal effect. While the covariates used align with predictors commonly identified in urban health literature <span class="citation" data-cites="Rehm2008_urbanhealth_ssb">(<a href="#ref-Rehm2008_urbanhealth_ssb" role="doc-biblioref">Rehm et al. 2008</a>)</span>, expanding the model to include other lifestyle and behavioral factors—such as alcohol consumption, duration and intensity of physical activity, and sleep quality—could enhance the precision of the estimated effect. These factors, if appropriately positioned in the causal graph, may help clarify indirect pathways and reduce omitted variable bias. However, it is critical to assess how these features relate to both the treatment (diet soda consumption) and the outcome (obesity) to avoid introducing colliders that could bias the model through spurious associations. Beyond refining the PGM, incorporating a propensity score approach could offer complementary insights by estimating counterfactual scenarios—such as the likelihood of obesity in individuals who do and do not consume diet soda—while adjusting for confounding variables.</p>
+<p>If future researchers choose to broaden the focus beyond obesity, several health outcomes warrant attention. For example, emerging evidence links diet soda consumption with increased risks of type 2 diabetes <span class="citation" data-cites="gardener2018diet McGlynn2022">(<a href="#ref-gardener2018diet" role="doc-biblioref">Gardener et al. 2018</a>; <a href="#ref-McGlynn2022" role="doc-biblioref">McGlynn et al. 2022</a>)</span> and cardiovascular disease. Regardless of the chosen health outcome, the current body of research highlights the potential long-term harms of artificial sweetener consumption. As such, further investigation is essential to fully understand the broader health implications of diet soda and inform public health recommendations.</p>
 
 </section>
 
 <div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-CDC_BMI_Categories" class="csl-entry" role="listitem">
+Centers for Disease Control and Prevention. 2023. <span>“About Adult BMI: Interpreting BMI Categories.”</span> <a href="https://www.cdc.gov/bmi/adult-calculator/bmi-categories.html">https://www.cdc.gov/bmi/adult-calculator/bmi-categories.html</a>.
+</div>
 <div id="ref-cdc_adult_obesity_maps" class="csl-entry" role="listitem">
 Centers for Disease Control and Prevention (CDC). 2024. <span>“Adult Obesity Prevalence Maps.”</span> <a href="https://www.cdc.gov/obesity/data-and-statistics/adult-obesity-prevalence-maps.html" class="uri">https://www.cdc.gov/obesity/data-and-statistics/adult-obesity-prevalence-maps.html</a>.
+</div>
+<div id="ref-gardener2018diet" class="csl-entry" role="listitem">
+Gardener, Hannah, Yeseon P Moon, Tatjana Rundek, Mitchell SV Elkind, and Ralph L Sacco. 2018. <span>“Diet Soda and Sugar-Sweetened Soda Consumption in Relation to Incident Diabetes in the Northern Manhattan Study.”</span> <em>Current Developments in Nutrition</em> 2 (5): nzy008.
 </div>
 <div id="ref-hall2019ultra" class="csl-entry" role="listitem">
 Hall, Kevin D., Abraham Ayuketah, Robert Brychta, Hongyi Cai, Tyler Cassimatis, Kyle Y. Chen, Seongwon T. Chung, et al. 2019. <span>“Ultra-Processed Diets Cause Excess Calorie Intake and Weight Gain: An Inpatient Randomized Controlled Trial of Ad Libitum Food Intake.”</span> <em>Cell Metabolism</em> 30 (1): 67–77.e3. <a href="https://doi.org/10.1016/j.cmet.2019.05.008">https://doi.org/10.1016/j.cmet.2019.05.008</a>.
 </div>
 <div id="ref-ihme_lancet_obesity2050" class="csl-entry" role="listitem">
 Institute for Health Metrics and Evaluation (IHME). 2024. <span>“Without Immediate Action, Nearly 260 Million People in the u.s. Predicted to Be Overweight or Obese by 2050.”</span> <a href="https://www.healthdata.org/news-events/newsroom/news-releases/lancet-without-immediate-action-nearly-260-million-people-usa" class="uri">https://www.healthdata.org/news-events/newsroom/news-releases/lancet-without-immediate-action-nearly-260-million-people-usa</a>.
+</div>
+<div id="ref-koller2009probabilistic" class="csl-entry" role="listitem">
+Koller, Daphne, and Nir Friedman. 2009. <em>Probabilistic Graphical Models: Principles and Techniques</em>. Cambridge, MA: MIT Press.
 </div>
 <div id="ref-laster_frame_2019" class="csl-entry" role="listitem">
 Laster, Janese, and Leigh A. Frame. 2019. <span>“Beyond the Calories—Is the Problem in the Processing?”</span> <em>Current Treatment Options in Gastroenterology</em> 17 (4): 577–86. <a href="https://doi.org/10.1007/s11938-019-00246-1">https://doi.org/10.1007/s11938-019-00246-1</a>.
@@ -228,6 +437,9 @@ McGlynn, N. D., T. A. Khan, L. Wang, R. Zhang, L. Chiavaroli, F. Au-Yeung, J. J.
 </div>
 <div id="ref-Rajesh2023" class="csl-entry" role="listitem">
 Rajesh, Ananya Mariam. 2023. <span>“PepsiCo Says It Has No Plans to Change Its Portfolio as WHO Set to Warn on Aspartame Sweeteners.”</span> <em>Reuters</em>. <a href="https://www.reuters.com/business/retail-consumer/pepsico-says-no-plans-change-portfolio-who-set-warn-aspartame-sweeteners-2023-07-13/">https://www.reuters.com/business/retail-consumer/pepsico-says-no-plans-change-portfolio-who-set-warn-aspartame-sweeteners-2023-07-13/</a>.
+</div>
+<div id="ref-Rehm2008_urbanhealth_ssb" class="csl-entry" role="listitem">
+Rehm, Colin D., Thomas D. Matte, Gretchen Van Wye, Candace Young, and Thomas R. Friedman. 2008. <span>“Demographic and Behavioral Factors Associated with Daily Sugar‑sweetened Soda Consumption in New York City Adults.”</span> <em>Journal of Urban Health</em> 85 (3): 375–85. <a href="https://doi.org/10.1007/s11524-008-9269-8">https://doi.org/10.1007/s11524-008-9269-8</a>.
 </div>
 <div id="ref-Toews2019" class="csl-entry" role="listitem">
 Toews, I., S. Lohner, D. Küllenberg de Gaudry, H. Sommer, and J. J. Meerpohl. 2019. <span>“Association Between Intake of Non-Sugar Sweeteners and Health Outcomes: Systematic Review and Meta-Analyses of Randomized and Non-Randomized Controlled Trials and Observational Studies.”</span> <em>BMJ</em> 364: k4718. <a href="https://doi.org/10.1136/bmj.k4718">https://doi.org/10.1136/bmj.k4718</a>.
@@ -316,8 +528,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
   });
   clipboard.on('success', onCopySuccess);
   if (window.document.getElementById('quarto-embedded-source-code-modal')) {
-    // For code content inside modals, clipBoardJS needs to be initialized with a container option
-    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
     const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
       text: getTextToCopy,
       container: window.document.getElementById('quarto-embedded-source-code-modal')
@@ -428,7 +638,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       if (window.Quarto?.typesetMath) {
         window.Quarto.typesetMath(note);
       }
-      // TODO in 1.5, we should make sure this works without a callout special case
       if (note.classList.contains("callout")) {
         return note.outerHTML;
       } else {

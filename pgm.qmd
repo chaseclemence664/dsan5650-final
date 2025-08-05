@@ -12,7 +12,7 @@ import arviz as az
 ```{python}
 from sklearn.model_selection import train_test_split
 
-clean_df = pd.read_csv("cleaned_data.csv")
+clean_df = pd.read_csv("./data/cleaned_data.csv")
 
 train_df, test_df = train_test_split(clean_df, test_size = 0.2, random_state = 5650)
 
@@ -120,7 +120,7 @@ with pm.Model(coords=coords) as obesity_model:
     gender = pm.Data("gender", X_train["RIAGENDR"].values, dims="seqn_id") # 1 represents female, 0 is male
     paq605 = pm.Data("paq605", X_train["PAQ605"].values, dims="seqn_id") # 1 represents vigorous work activity present
     paq620 = pm.Data("paq620", X_train["PAQ620"].values, dims="seqn_id") # 1 represents moderate work activity present
-    whq070 = pm.Data("whq070", X_train["WHQ070"].values, dims="seqn_id") # 1 represents intentional weight loss
+    #whq070 = pm.Data("whq070", X_train["WHQ070"].values, dims="seqn_id") # 1 represents intentional weight loss; this has been commended out because it is believed to be a collider
 
     # Dummy variable groups
     race_cols = [col for col in X_train.columns if col.startswith("RIDRETH1_")]
@@ -141,7 +141,7 @@ with pm.Model(coords=coords) as obesity_model:
     beta_gender = pm.Beta("beta_gender", alpha=1, beta=1) # Women often have higher BMIs
     beta_paq605 = pm.Beta("beta_paq605", alpha=1, beta=3) # Some vigorous activity likely decreases your BMI
     beta_paq620 = pm.Beta("beta_paq620", alpha=1, beta=2) # Some moderate activity likely decreases BMI (though not as much as vigorous)
-    beta_whq070 = pm.Beta("beta_whq070", alpha=1, beta=2) # Intentional weight loss should correspond with lower probability of obesity
+    #beta_whq070 = pm.Beta("beta_whq070", alpha=1, beta=2) # Intentional weight loss should correspond with lower probability of obesity; this has been commended out because it is believed to be a collider
 
     beta_race = pm.Normal("beta_race", mu=0, sigma=1, dims="race_cat") # Assumed that there is no real difference between races
 
@@ -162,7 +162,7 @@ with pm.Model(coords=coords) as obesity_model:
         beta_gender * gender +
         beta_paq605 * paq605 +
         beta_paq620 * paq620 +
-        beta_whq070 * whq070 +
+        #beta_whq070 * whq070 +
         pm.math.dot(race_data, beta_race) +
         pm.math.dot(edu_data, beta_edu) +
         pm.math.dot(income_data, beta_income) +
@@ -230,7 +230,7 @@ with obesity_model:
         "gender": X_test["RIAGENDR"].values,
         "paq605": X_test["PAQ605"].values,
         "paq620": X_test["PAQ620"].values,
-        "whq070": X_test["WHQ070"].values,
+        #"whq070": X_test["WHQ070"].values, (collider)
         "race_data": X_test[race_cols].values,
         "edu_data": X_test[edu_cols].values,
         "income_data": X_test[income_cols].values,
